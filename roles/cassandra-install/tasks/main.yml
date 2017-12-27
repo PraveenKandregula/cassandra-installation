@@ -1,0 +1,67 @@
+- name: Check if {{cassandra_tar}} is available at /tmp
+  stat:
+    path: "/tmp/{{cassandra_tar}}"
+  register: cassandratar
+
+- name: Download cassandra tar
+  get_url:
+    url: "{{cassandra_tar_url}}"
+    dest: /tmp
+    mode: 0755
+  when: cassandratar.stat.exists == false
+
+- name: Ensure cassandra home exists and empty
+  file:
+    path: "{{cassandra_home}}"
+    state: "{{item}}"
+    owner: cassandra
+    group: cassandra
+    mode: 0744
+  with_items:
+  - absent
+  - directory
+  become: yes
+  become_user: root
+
+- name: Untar {{cassandra_tar}} to {{cassandra_home}}
+  unarchive: 
+    src: "/tmp/{{cassandra_tar}}"
+    dest: "{{cassandra_home}}"
+    remote_src: yes
+  become: yes
+  become_user: cassandra
+
+- name: Copy cassandra.yaml template
+  template:
+    src: cassandra.yaml
+    dest: "{{cassandra_home}}/{{cassandra_version}}/conf/cassandra.yaml"
+  become: yes
+  become_user: cassandra
+
+- name: Create logs directory
+  file: 
+    path: "{{cassandra_home}}/{{cassandra_version}}/logs"
+    state: directory
+  become: yes
+  become_user: cassandra
+
+- name: Start cassandra
+  shell: "nohup {{cassandra_home}}/{{cassandra_version}}/bin/cassandra &"
+  args:
+    chdir: "{{cassandra_home}}/{{cassandra_version}}/logs"
+  become: yes
+  become_user: cassandra
+  register: cassandrastart
+
+- name: Cassandra start status
+  debug: 
+    var=cassandrastart
+
+- name: Validate nodetool status
+  shell: "{{cassandra_home}}/{{cassandra_version}}/bin/nodetool status"
+  register: ntstatus
+  become: yes
+  become_user: cassandra
+
+- name: nodetool status
+  debug: var=ntstatus

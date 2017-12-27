@@ -1,0 +1,59 @@
+- name: Validate if java version is {{java_version}}
+  shell: java -version
+  register: javaversion
+  ignore_errors: true
+
+- name: Validate if java rpm is available at /tmp location if java version is not {{java_version}}
+  stat: 
+    path: "/tmp/{{java_rpm}}"
+  register: javarpm
+  when: '"{{java_version}}" not in javaversion.stderr'
+
+- debug: var=javarpm
+ 
+#- name: Download jdk if it is not available at /tmp
+#  get_url:
+#    url: "{{jdk_url}}"
+#    dest: /tmp
+#    mode: 0755
+#  when: javarpm.stat.exists == false
+
+- name: Copy jdk if it is not available at /tmp
+  copy: 
+    src: /tmp/{{java_rpm}}
+    dest: /tmp
+    mode: 0755
+  when: javarpm.stat.exists == false
+  ignore_errors: true
+
+- name: Validate if jdk rpm is copied
+  stat:
+    path: "/tmp/{{java_rpm}}"
+  register: javarpm2
+  when: javarpm.stat.exists == false 
+  ignore_errors: true
+
+- debug: var=javarpm2
+
+- name: "Install java {{java_version}} if it is not installed already. Pre-requisite is {{java_rpm}} is available at /tmp"
+  #shell: "rpm -ivh /tmp/{{java_rpm}}"
+  yum:
+    name: /tmp/{{java_rpm}}
+    state: installed
+  when: 
+  - '"{{java_version}}" not in javaversion.stderr'
+  #- 'javarpm2.stat.exists == true'
+  #when: javaversion | search("{{java_version}}")
+  become: yes
+  become_user: root
+
+- name: "Make {{java_version}} default"
+  alternatives:
+    name: java
+    link: /usr/bin/java
+    path: /usr/java/jdk1.8.0_60/bin/java
+  #when: 
+  #- '"{{java_version}}" not in javaversion.stderr'
+  #- 'javarpm2.stat.exists == true'
+  become: yes
+  become_user: root

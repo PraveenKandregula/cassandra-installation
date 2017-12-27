@@ -1,0 +1,28 @@
+- name: "check if user:{{user}} exist"
+  shell: id {{user}}
+  ignore_errors: true
+  register: userstatus
+
+- name: "Create group {{group}} if it doesn't exist"
+  group:
+    name: "{{group}}"
+    gid: "{{gid}}"
+    state: present
+  become: yes
+  become_user: root
+  ignore_errors: true
+  when: userstatus.failed == true
+
+- name: "Create user {{user}} if it doesn't exist"
+  user:
+    name: "{{user}}"
+    shell: /bin/bash
+    uid: "{{uid}}"
+    group: "{{group}}"
+    #gid: "{{gid}}"
+  become: yes
+  become_user: root
+  ignore_errors: true
+  when: userstatus.failed == true
+
+#- debug: var=userstatus

@@ -1,0 +1,24 @@
+- hosts: all
+  connection: ssh
+  roles:
+  - role: validate-jdk
+    java_rpm: jdk-8u60-linux-x64.rpm
+    java_version: 1.8.0_60
+    jdk_url: http://download.oracle.com/otn/java/jdk/8u60-b27/jdk-8u60-linux-x64.rpm
+    tags: jdk
+
+  - role: linux-user-check
+    user: cassandra
+    uid: 1099
+    group: cassandra
+    gid: 1199
+    tags: luc
+
+  - role: cassandra-install
+    cassandra_tar_url: http://apache.claz.org/cassandra/3.11.1/apache-cassandra-3.11.1-bin.tar.gz
+    cassandra_tar: apache-cassandra-3.11.1-bin.tar.gz
+    cassandra_home: /opt/cassandra
+    cassandra_version: apache-cassandra-3.11.1
+    cassandra_cluster_name: cassandra_prod_cluster
+    ips: 13.229.211.98,13.250.53.140,13.229.118.224
+    tags: casinstall
